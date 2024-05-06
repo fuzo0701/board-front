@@ -5,8 +5,16 @@
   font-style: normal;
 }
 
+@font-face {
+  font-family: 'GimhaeGayaR';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2202-2@1.0/GimhaeGayaR.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+}
+
 body {
   margin: 0;
+  min-width: 1440px;
   font-family: 'Pretendard-Regular';
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
