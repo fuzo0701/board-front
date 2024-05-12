@@ -1,22 +1,23 @@
 import CommentItem from 'components/CommentItem/inde';
 import FavoriteItem from 'components/FavoriteItem';
 import Pagination from 'components/Pagination';
-import { commentListMock, favoriteListMock } from 'mocks';
 import { ChangeEvent, useEffect, useRef, useState } from 'react';
 import { CommentListItem, FavoriteListItem } from 'types/interface';
 import './style.css';
 
-import { getBoardRequest, getCommentListRequest, getFavoriteListRequest, increaseViewCountRequest, putFavoriteRequest } from 'apis';
+import { deleteBoardRequest, getBoardRequest, getCommentListRequest, getFavoriteListRequest, increaseViewCountRequest, postCommentRequest, putFavoriteRequest } from 'apis';
+import { PostCommentRequestDto } from 'apis/reqeust/board';
 import { ResponseDto } from 'apis/response';
-import { GetCommentListResponseDto, GetFavoriteListResponseDto, IncreaseViewCountResponseDto, PutFavoriteResponseDto } from 'apis/response/board';
+import { DeleteBoardResponseDto, GetCommentListResponseDto, GetFavoriteListResponseDto, IncreaseViewCountResponseDto, PostCommentResponseDto, PutFavoriteResponseDto } from 'apis/response/board';
 import GetBoardResponseDto from 'apis/response/board/get-board.response.dto';
 import defaultProfileImage from 'assets/image/default-profile-image.png';
 import { BOARD_PATH, BOARD_UPDATE_PATH, MAIN_PATH, USER_PATH } from 'constant';
+import dayjs from 'dayjs';
+import { useCookies } from 'react-cookie';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useLoginUserStore } from 'stores';
 import Board from 'types/interface/board.interface';
-import dayjs from 'dayjs';
-import { useCookies } from 'react-cookie';
+import { usePagination } from 'hooks';
 
 //          component: 게시물 상세  화면 컴포넌트          //
 export default function BoardDetail() {
@@ -27,7 +28,7 @@ export default function BoardDetail() {
   //  state: 쿠키 상태 //
   const [cookies, setCookies] = useCookies();
   //  function: 네비게이트 함수 //
-  const navigator = useNavigate();
+  const navigate = useNavigate();
   //  function: //
   const increaseViewCountResponse = (responseBody: IncreaseViewCountResponseDto | ResponseDto | null) => {
     if (!responseBody) return;
@@ -44,34 +45,6 @@ export default function BoardDetail() {
     const [board, setBoard] = useState<Board | null>(null);
     // state : more 버튼 상태 //
     const [showMore, setShowMore] = useState<boolean>(false);
-    //  event handler : more 버튼 클릭 이벤트 처리 //
-    const onNicknameButtonClickHandler = () => {
-      if (!board) return;
-      navigator(USER_PATH(board.writerEmail));
-    }
-    //  event handler : more 버튼 클릭 이벤트 처리 //
-    const onMoreButtonClickHandler = () => {
-      setShowMore(!showMore);
-    }
-    //  event handler : update 버튼 클릭 이벤트 처리 //
-    const onUpdateButtonClickHandler = () => {
-      if (!board || !loginUser) return;
-      if (loginUser.email !== board.writerEmail) return;
-      navigator(BOARD_PATH() + "/" + BOARD_UPDATE_PATH(board.boardNumber));
-    }
-    //  event handler : delete 버튼 클릭 이벤트 처리 //
-    const onDeleteButtonClickHandler = () => {
-      if (!board || !loginUser) return;
-      if (loginUser.email !== board.writerEmail) return;
-      // TODO:: delete Request
-      navigator(MAIN_PATH());
-    }
-    // function : 작성일 포맷 변경 처리 함수 //
-    const getWriteDatetimeFormat = () => {
-      if(!board) return '';
-      const date = dayjs(board.writeDatetime);
-      return date.format('YYYY. MM. DD.');
-    }
     //  function : getBoard response 처리 함수 //
     const getBoardResponse = (responseBody: GetBoardResponseDto | ResponseDto | null) => {
       if (!responseBody) return;
@@ -79,7 +52,7 @@ export default function BoardDetail() {
       if (code === 'NB') alert('존재하지 않는 게시물입니다.');
       if (code === 'DBE') alert('데이터베이스 오류입니다.');
       if (code !== 'SU') {
-        navigator(MAIN_PATH());
+        navigate(MAIN_PATH());
         return;
       }
       const board: Board = { ...responseBody as GetBoardResponseDto }
@@ -92,11 +65,53 @@ export default function BoardDetail() {
       const isWriter = loginUser.email === board.writerEmail;
       setWriter(true);
     }
+    // function : delete board response 처리 함수 //
+    const deleteBoardResponse = (responseBody: DeleteBoardResponseDto | ResponseDto | null) => {
+      if(!responseBody) return;
+      const { code } = responseBody;
+      if(code === 'VF') alert('잘못된 접근입니다.');
+      if(code === 'NU') alert('존재하지 않는 유저입니다.');
+      if(code === 'NB') alert('존재하지 않는 게시물입니다.');
+      if(code === 'AF') alert('인증에 실패했습니다.');
+      if(code === 'NP') alert('권한이 없습니다.');
+      if(code === 'DBE') alert('데이터베이스 오류입니다.');
+      if(code !== 'SU') return;
+
+      navigate(MAIN_PATH());
+    }
+    //  event handler : more 버튼 클릭 이벤트 처리 //
+    const onNicknameButtonClickHandler = () => {
+      if (!board) return;
+      navigate(USER_PATH(board.writerEmail));
+    }
+    //  event handler : more 버튼 클릭 이벤트 처리 //
+    const onMoreButtonClickHandler = () => {
+      setShowMore(!showMore);
+    }
+    //  event handler : update 버튼 클릭 이벤트 처리 //
+    const onUpdateButtonClickHandler = () => {
+      if (!board || !loginUser) return;
+      if (loginUser.email !== board.writerEmail) return;
+      navigate(BOARD_PATH() + "/" + BOARD_UPDATE_PATH(board.boardNumber));
+    }
+    //  event handler : delete 버튼 클릭 이벤트 처리 //
+    const onDeleteButtonClickHandler = () => {
+      if (!board || !loginUser || !boardNumber||!cookies.accessToken) return;
+      if (loginUser.email !== board.writerEmail) return;
+      deleteBoardRequest(boardNumber, cookies.accessToken).then(deleteBoardResponse);
+    }
+    // function : 작성일 포맷 변경 처리 함수 //
+    const getWriteDatetimeFormat = () => {
+      if(!board) return '';
+      const date = dayjs(board.writeDatetime);
+      return date.format('YYYY. MM. DD.');
+    }
+    
 
     //  effect: 게시물 번호 path variable이 바뀔때 마다 게시물 불러오기 //
     useEffect(() => {
       if (!boardNumber) {
-        navigator(MAIN_PATH());
+        navigate(MAIN_PATH());
         return;
       }
       getBoardRequest(boardNumber).then(getBoardResponse);
@@ -144,18 +159,30 @@ export default function BoardDetail() {
   const BoardDetailBottom = () => {
     // state: 댓글 textarea 참조 상태 //
     const commentRef = useRef<HTMLTextAreaElement | null>(null);
+    // state: 페이지네이션 관련 상태 //
+    const {
+      currentPage,
+      setCurrentPage,
+      currentSection,
+      setCurrentSection,
+      viewList,
+      viewPageList,
+      totalSection,
+      setTotalList,
+    } = usePagination<CommentListItem>(3);
     // state: 좋아요 리스트 상태 //
     const [favoriteList, setFavoriteList] = useState<FavoriteListItem[]>([]);
-    // state: 댓글 리스트 상태 //
-    const [commentList, setCommentList] = useState<CommentListItem[]>([]);
     //  state: 좋아요 상태 //
     const [isFavorite, setFavorite] = useState<boolean>(false);
     //  state: 좋아요 리스트 보기 상태 //
     const [showFavorite, setShowFavorite] = useState<boolean>(false);
-    //  state: 댓글 리스트 보기 상태 //
-    const [showComment, setShowComment] = useState<boolean>(false);
-    //  state: 댓글 리스트 보기 상태 //
+    //  state: 댓글 상태 //
+    const [totalCommentCount, setTotalCommentCount] = useState<number>(0);
+    //  state: 댓글 상태 //
     const [comment, setComment] = useState<string>('');
+    //  state: 댓글 상자 보기 상태 //
+    const [showComment, setShowComment] = useState<boolean>(false);
+    
     // function : get favorite list response 처리 함수 //
     const getFavoriteListResponse = (responseBody: GetFavoriteListResponseDto | ResponseDto | null) => {
       if(!responseBody) return;
@@ -182,7 +209,8 @@ export default function BoardDetail() {
       if(code !== 'SU') return;
 
       const { commentList } = responseBody as GetCommentListResponseDto;
-      setCommentList(commentList);
+      setTotalList(commentList);
+      setTotalCommentCount(commentList.length);
     }
     //  function: put favorite response 처리 함수 //
     const putFavoriteResponse = (responseBody: PutFavoriteResponseDto | ResponseDto | null) => {
@@ -196,6 +224,21 @@ export default function BoardDetail() {
       if(code !== 'SU') return;
       if(!boardNumber) return;
       getFavoriteListRequest(boardNumber).then(getFavoriteListResponse);
+    }
+    // function: post commnet response 처리 함수 //
+    const postCommentResponse = (responseBody: PostCommentResponseDto | ResponseDto | null) => {
+      if(!responseBody) return;
+      const { code } = responseBody;
+      if(code === 'VF') alert('잘못된 접근입니다.');
+      if(code === 'NU') alert('존재하지 유저입니다.');
+      if(code === 'NB') alert('존재하지 않는 게시물입니다.');
+      if(code === 'AF') alert('인증에 실패했습니다.');
+      if(code === 'DBE') alert('데이터베이스 오류입니다.');
+      if(code !== 'SU') return;
+      setComment('');
+      if(!boardNumber) return;
+      getCommentListRequest( boardNumber).then(getCommentListResponse);
+
     }
     //  event handler: 좋아요 클릭 이벤트 처리 //
     const onFavoriteClickHandler = () => {
@@ -212,7 +255,9 @@ export default function BoardDetail() {
     }
     //  event handler: 댓글 작성 버튼 클릭 이벤트 처리 //
     const onCommnetSubmitButtonClickHandler = () => {
-      if (!comment) return;
+      if (!comment || !boardNumber || !loginUser || !cookies.accessToken) return;
+      const requestbody: PostCommentRequestDto = { content: comment};
+      postCommentRequest(boardNumber, requestbody, cookies.accessToken).then(postCommentResponse);
     }
     //  event handler: 댓글 변경 클릭 이벤트 처리 //
     const onCommnetChangekHandler = (event: ChangeEvent<HTMLTextAreaElement>) => {
@@ -252,7 +297,7 @@ export default function BoardDetail() {
             <div className='icon-button'>
               <div className='icon comment-icon'></div>
             </div>
-            <div className='board-detail-bottom-button-text'>{`댓글 ${commentList.length}`}</div>
+            <div className='board-detail-bottom-button-text'>{`댓글 ${totalCommentCount}`}</div>
             <div className='icon-button' onClick={onShowCommnetClickHandler}>
               {showComment ?
                 <div className='icon up-light-icon'></div> :
@@ -274,16 +319,23 @@ export default function BoardDetail() {
         {showComment &&
           <div className='board-detail-bottom-comment-box'>
             <div className='board-detail-bottom-comment-container'>
-              <div className='board-detail-bottom-comment-title'>{'댓글 '}<span className='emphasis'>{commentList.length}</span></div>
+              <div className='board-detail-bottom-comment-title'>{'댓글 '}<span className='emphasis'>{totalCommentCount}</span></div>
               <div className='board-detail-bottom-comment-list-container'>
-                {commentList.map((item, idx) => <CommentItem commentListItem={item} key={idx} />)}
+                {viewList.map((item, idx) => <CommentItem commentListItem={item} key={idx} />)}
               </div>
             </div>
             <div className='divider'>
 
             </div>
             <div className='board-detail-bottom-comment-pagination-box'>
-              <Pagination />
+              <Pagination 
+                currentPage={currentPage}
+                currentSection={currentSection}
+                setCurrentPage={setCurrentPage}
+                setCurrentSection={setCurrentSection}
+                viewPageList={viewPageList}
+                totalSection={totalSection}
+              />
             </div>
             {loginUser !== null &&
               <div className='board-detail-bottom-comment-input-box'>

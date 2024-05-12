@@ -3,6 +3,7 @@ import './style.css';
 import { BoardListItem } from 'types/interface';
 import { useNavigate } from 'react-router-dom';
 import DefaultProfileImage from 'assets/image/default-profile-image.png';
+import { BOARD_DETAIL_PATH, BOARD_PATH } from 'constant';
 
 interface Props {
     boardListItem: BoardListItem
@@ -24,18 +25,18 @@ const {
         writerProfileImage
     } = boardListItem;
 //              function: 네비게이드 함수        //
-// const navigator = useNavigate();
+const navigate = useNavigate();
 //              event handler: 게시물 아이템 클릭 이벤트 처리 함수        //
-// const onClickHandler = () => {
-//     navigator(boardNumber);
-//  }
+const onClickHandler = () => {
+    navigate(BOARD_PATH() + "/" + BOARD_DETAIL_PATH(boardNumber));
+}
 //              render: Boarsd List Item 컴포넌트 렌더링        //
   return (
-    <div className='board-list-item' >
+    <div className='board-list-item' onClick={onClickHandler}>
         <div className='board-list-item-main-box'>
             <div className='board-list-item-top'>
                 <div className='board-list-item-profile-box'>
-                     <div className='board-list-item-profile-image' style={{backgroundImage: `url(${writerProfileImage && DefaultProfileImage})`}}></div>
+                     <div className='board-list-item-profile-image' style={{backgroundImage: `url(${writerProfileImage != null ? writerProfileImage : DefaultProfileImage})`}}></div>
                 </div>
                 <div className='board-list-item-write-box'>
                     <div className='board-list-item-nickname'>{writerNickname}</div>

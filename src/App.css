@@ -5,6 +5,21 @@
 .emphasis {
     font-weight: bolder;
 }
+.word-badge {
+    padding: 6px 20px;
+    border-radius: 30px;
+    border: 1px solid rgba(0, 0, 0, 0.5);
+
+    color: rgba(0, 0, 0, 0.5);
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 140%;
+}
+
+.word-badge:hover {
+    background-color: rgba(0, 0, 0, 0.04);
+    cursor: pointer;
+}
 
 .black-button {
     border-radius: 46px;
@@ -97,6 +112,14 @@
     align-items: center;
     justify-content: center;
 }
+.icon-box-small {
+    width: 16px;
+    height: 16px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
 
 .icon-button {
     border-radius:  50% 50%;
@@ -132,6 +155,14 @@
 
 .expand-right-light-icon {
     background-image: url(assets/image/expand-right-light.png);
+}
+
+.expand-left-icon {
+    background-image: url(assets/image/expand-left.png);
+}
+
+.expand-right-icon {
+    background-image: url(assets/image/expand-right.png);
 }
 
 .logo-light-icon {
