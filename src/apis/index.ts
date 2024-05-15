@@ -3,10 +3,11 @@ import { SignInReqeustDto, SignUpRequestDto } from "./reqeust/auth";
 import SignInResponseDto from "./response/auth/sign-in.response.dto";
 import { ResponseDto } from "./response";
 import { SignUpResponseDto } from "./response/auth";
-import { GetSignInUserResponseDto } from "./response/user";
+import { GetSignInUserResponseDto, GetUserResponseDto, PatchNicknameResponseDto, PatchProfileImageResponseDto } from "./response/user";
 import { PostBoardRequestDto, PostCommentRequestDto, patchBoardRequestDto } from "./reqeust/board";
-import { PostBoardResponseDto, GetBoardResponseDto, IncreaseViewCountResponseDto, GetFavoriteListResponseDto, GetCommentListResponseDto, PutFavoriteResponseDto, PostCommentResponseDto, DeleteBoardResponseDto, PatchBoardResponseDto, GetLatestBoardListResponseDto, GetTop3ResponseDto, GetSearchBoardListResponseDto } from "./response/board";
+import { PostBoardResponseDto, GetBoardResponseDto, IncreaseViewCountResponseDto, GetFavoriteListResponseDto, GetCommentListResponseDto, PutFavoriteResponseDto, PostCommentResponseDto, DeleteBoardResponseDto, PatchBoardResponseDto, GetLatestBoardListResponseDto, GetTop3ResponseDto, GetSearchBoardListResponseDto, GetUserBoardListResponseDto } from "./response/board";
 import { GetPopularListResponseDto, GetRelationResponseDto } from "./response/search";
+import { PatchNicknameRequestDto, PatchProfileImageRequestDto } from "./reqeust/user";
 
 const DOMAIN = 'http://localhost:4000';
 
@@ -60,7 +61,22 @@ const authorization = (accessToken: string) => {
  const GET_LATEST_BOARD_LIST_URL = () => `${API_DOMAIN}/board/latest-list`;
  const GET_TOP_3_BOARD_LIST_URL = () => `${API_DOMAIN}/board/top-3`;
  const GET_SEARCH_BOARD_LIST_URL = (searchWord:string, preSearchWord:string | null) => `${API_DOMAIN}/board/search-list/${searchWord}${preSearchWord ? '/' + preSearchWord : ''}`;
-
+ const GET_USER_BOARD_LIST_USER = (email : string) => `${API_DOMAIN}/board/user-board-list/${email}`;
+ 
+ // function : 유저 게시물 리스트 조회 //
+ export const getUserBoardListRequest = async (email: string) => {
+    const result = await axios.get(GET_USER_BOARD_LIST_USER(email))
+        .then(response => {
+            const responseBody: GetUserBoardListResponseDto = response.data;
+            return responseBody;
+        })
+        .catch(error => {
+            if(!error.response) return null;
+            const responseBody: ResponseDto = error.response.data;
+            return responseBody;
+        })
+    return result;
+ }
  // function : 게시물 상세정보 조회 //
  export const getBoardRequest = async (boardNumber: number | string) => {
     const result = await axios.get(GET_BOARD_URL(boardNumber))
@@ -259,9 +275,26 @@ const GET_RELATION_LIST_URL = (searchWord: string) => `${API_DOMAIN}/search/${se
     return result;
  }
 
-// function :  프로필 정보를 가져온다 // 
+ const GET_USER_URL = (email: string) => `${API_DOMAIN}/user/${email}`;
  const GET_SIGN_IN_USER_URL = () => `${API_DOMAIN}/user`;
-
+ const PATCH_NICKNAME_URL = () => `${API_DOMAIN}/user/nickname`;
+ const PATCH_PROFILE_IMAGE_URL = () => `${API_DOMAIN}/user/profile-image`;
+ 
+// function : 유저 정보를 가져온다. //
+export const getUserRequest = async (email: string) => {
+    const result = await axios.get(GET_USER_URL(email))
+        .then(response => {
+            const responseBody: GetUserResponseDto = response.data;
+            return responseBody;
+        })
+        .catch(error => {
+            if(!error.response) return null;
+            const responseBody: ResponseDto = error.response.data;
+            return responseBody;
+        });
+    return result;
+}
+// function :  프로필 정보를 가져온다 //
  export const getSignInUserRequest = async (accessToken: string) => {
     const result = await axios.get(GET_SIGN_IN_USER_URL(), authorization(accessToken))
         .then(response => {
@@ -273,10 +306,36 @@ const GET_RELATION_LIST_URL = (searchWord: string) => `${API_DOMAIN}/search/${se
             const responseBody: ResponseDto = error.response.data;
             return responseBody;
         });
-
+    return result;
+ };
+ // function : 닉네임 변경하기 //
+ export const patchNicknameRequest = async (requestBody: PatchNicknameRequestDto, accessToken: string) => {
+    const result = await axios.patch(PATCH_NICKNAME_URL(), requestBody, authorization(accessToken))
+        .then(response => {
+            const responseBody: PatchNicknameResponseDto = response.data;
+            return responseBody;
+        })
+        .catch(error => {
+            if(!error.response) return null;
+            const responseBody: ResponseDto = error.response.data;
+            return responseBody;
+        });
     return result;
  }
-
+ // function : 프로필 이미지  변경하기 //
+ export const patchProfileImageRequest = async (requestBody: PatchProfileImageRequestDto, accessToken: string) => {
+    const result = await axios.patch(PATCH_PROFILE_IMAGE_URL(), requestBody, authorization(accessToken))
+        .then(response => {
+            const responseBody: PatchProfileImageResponseDto = response.data;
+            return responseBody;
+        })
+        .catch(error => {
+            if(!error.response) return null;
+            const responseBody: ResponseDto = error.response.data;
+            return responseBody;
+        });
+    return result;
+ }
  // function : 첨부파일관련 // 
  const FILE_DOMAIN = `${DOMAIN}/file`;
  const FILE_UPLOAD_URL = () => `${FILE_DOMAIN}/upload`;
